@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = 'https://occyhlgzbhtswdzwompb.supabase.co/rest/v1'
+// HAPUS bagian /rest/v1 di belakangnya
+const supabaseUrl = 'https://occyhlgzbhtswdzwompb.supabase.co' 
 const supabaseAnonKey = 'sb_publishable_t5-DHBbyKV2FOaJlJvIb3g_lM7MqZL_'
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
