@@ -257,7 +257,7 @@ export default function WebProfile() {
         </div>
         {reviews.length > 3 && (
           <button onClick={() => setShowAll(!showAll)} className="mb-16 text-[#8b6b4a] font-bold hover:underline transition">
-            {showAll ? "↑ Tampilkan Lebih Sedikit" : "Lihat Semua Ulasan →"}
+            {showAll ? "↑ Tampilkan Lebih Sedikit" : "Lihat Semua Testimoni →"}
           </button>
         )}
         <div data-aos="fade-up" className="max-w-2xl mx-auto bg-[#f7f2eb] p-8 rounded-[2rem] border-2 border-dashed border-[#ead8c0]">
