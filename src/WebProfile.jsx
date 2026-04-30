@@ -7,43 +7,76 @@ import StudentImg from './assets/student_leader.png';
 import { useState, useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
+import { supabase } from './supabaseClient';
 
 export default function WebProfile() {
-  // --- 1. LOGIKA ADMIN & STATE ---
+  // --- 1. LOGIKA DATABASE SUPABASE & ADMIN ---
   const queryParams = new URLSearchParams(window.location.search);
   const isAdmin = queryParams.get("admin") === "true";
 
-  useEffect(() => {
-    AOS.init({
-      duration: 1000,
-      once: true,
-      offset: 100,
-    });
-  }, []);
-
-  const [reviews, setReviews] = useState([
-    { name: "Rina - Owner Honey Company", quote: "Hasil web sangat profesional dan pengerjaan cepat." },
-    { name: "Andi - Rekber App", quote: "Desain sesuai branding dan mudah diajak revisi." },
-    { name: "Dewi - To do List", quote: "Website membuat bisnis kami terlihat lebih terpercaya." },
-  ]);
-
+  // State ulasan sekarang dimulai dari array kosong karena data akan diambil dari database
+  const [reviews, setReviews] = useState([]);
   const [newName, setNewName] = useState("");
   const [newQuote, setNewQuote] = useState("");
   const [showAll, setShowAll] = useState(false);
   const [showAllPortfolio, setShowAllPortfolio] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (newName && newQuote) {
-      setReviews([{ name: newName, quote: newQuote }, ...reviews]);
-      setNewName("");
-      setNewQuote("");
+  // Fungsi untuk mengambil data dari Supabase
+  const fetchReviews = async () => {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .order('id', { ascending: false }); // Ulasan terbaru muncul di atas
+    
+    if (error) {
+      console.error("Gagal ambil ulasan:", error);
+    } else {
+      setReviews(data);
     }
   };
 
-  const deleteReview = (indexToDelete) => {
-    const updatedReviews = reviews.filter((_, index) => index !== indexToDelete);
-    setReviews(updatedReviews);
+  useEffect(() => {
+    // Jalankan AOS
+    AOS.init({
+      duration: 1000,
+      once: true,
+      offset: 100,
+    });
+    
+    // Jalankan pengambilan ulasan saat web pertama kali dibuka
+    fetchReviews();
+  }, []);
+
+  // Fungsi Tambah Ulasan ke Supabase
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (newName && newQuote) {
+      const { error } = await supabase
+        .from('reviews')
+        .insert([{ name: newName, quote: newQuote }]);
+
+      if (error) {
+        alert("Gagal kirim ulasan: " + error.message);
+      } else {
+        setNewName("");
+        setNewQuote("");
+        fetchReviews(); // Refresh daftar ulasan agar yang baru muncul
+      }
+    }
+  };
+
+  // Fungsi Hapus Ulasan dari Supabase
+  const deleteReview = async (idToDelete) => {
+    const { error } = await supabase
+      .from('reviews')
+      .delete()
+      .eq('id', idToDelete); // Hapus berdasarkan ID unik di database
+
+    if (error) {
+      alert("Gagal hapus ulasan");
+    } else {
+      fetchReviews(); // Refresh daftar ulasan setelah dihapus
+    }
   };
 
   return (
@@ -211,7 +244,7 @@ export default function WebProfile() {
           {(showAll ? reviews : reviews.slice(0, 3)).map((item, idx) => (
             <div key={idx} data-aos="fade-up" data-aos-delay={idx * 150} className="bg-[#f7f2eb] rounded-2xl shadow-md p-6 italic text-[#7a614b] border border-[#ead8c0] relative group">
               {isAdmin && (
-                <button onClick={() => deleteReview(idx)} className="absolute top-2 right-2 p-1 bg-red-100 text-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onClick={() => deleteReview(item.id)} className="absolute top-2 right-2 p-1 bg-red-100 text-red-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
