@@ -369,4 +369,5 @@ export default function WebProfile() {
       <footer className="py-8 text-center text-[#7a614b] bg-[#f1e7da]">© 2026 AR Studio</footer>
     </div>
   );
+  }
 }
