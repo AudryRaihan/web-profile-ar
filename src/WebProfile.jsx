@@ -4,7 +4,7 @@ import HoneyImg from './assets/honey_company.png';
 import RekberImg from './assets/rekber.png';
 import AlkafImg from './assets/alkaf.png';
 import StudentImg from './assets/student_leader.png';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react'; // FIXED: Tambahkan useRef
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { supabase } from './supabaseClient';
@@ -14,78 +14,18 @@ export default function WebProfile() {
   const queryParams = new URLSearchParams(window.location.search);
   const isAdmin = queryParams.get("admin") === "true";
 
-  // State ulasan sekarang dimulai dari array kosong karena data akan diambil dari database
   const [reviews, setReviews] = useState([]);
   const [newName, setNewName] = useState("");
   const [newQuote, setNewQuote] = useState("");
   const [showAll, setShowAll] = useState(false);
-  const [showAllPortfolio, setShowAllPortfolio] = useState(false);
 
-  // Fungsi untuk mengambil data dari Supabase
-  const fetchReviews = async () => {
-    const { data, error } = await supabase
-      .from('reviews')
-      .select('*')
-      .order('id', { ascending: false }); // Ulasan terbaru muncul di atas
-    
-    if (error) {
-      console.error("Gagal ambil ulasan:", error);
-    } else {
-      setReviews(data);
-    }
-  };
-
-  useEffect(() => {
-    // Jalankan AOS
-    AOS.init({
-      duration: 1000,
-      once: true,
-      offset: 100,
-    });
-    
-    // Jalankan pengambilan ulasan saat web pertama kali dibuka
-    fetchReviews();
-  }, []);
-
-  // Fungsi Tambah Ulasan ke Supabase
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (newName && newQuote) {
-      const { error } = await supabase
-        .from('reviews')
-        .insert([{ name: newName, quote: newQuote }]);
-
-      if (error) {
-        alert("Gagal kirim ulasan: " + error.message);
-      } else {
-        setNewName("");
-        setNewQuote("");
-        fetchReviews(); // Refresh daftar ulasan agar yang baru muncul
-      }
-    }
-  };
-
-  // Fungsi Hapus Ulasan dari Supabase
-  const deleteReview = async (idToDelete) => {
-    const { error } = await supabase
-      .from('reviews')
-      .delete()
-      .eq('id', idToDelete); // Hapus berdasarkan ID unik di database
-
-    if (error) {
-      alert("Gagal hapus ulasan");
-    } else {
-      fetchReviews(); // Refresh daftar ulasan setelah dihapus
-    }
-  };
-
-  export default function PortfolioSection() {
+  // --- 2. LOGIKA DRAG TO SCROLL PORTFOLIO ---
   const scrollRef = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
 
-  // Fungsi untuk Tombol Navigasi Kiri & Kanan (Smooth Scroll)
+  // Fungsi Smooth Scroll Panah Kiri & Kanan
   const scrollByAmount = (distance) => {
     if (scrollRef.current) {
       scrollRef.current.scrollBy({
@@ -95,7 +35,7 @@ export default function WebProfile() {
     }
   };
 
-  // Handler Drag-to-Scroll Mouse
+  // Handler Drag Mouse
   const handleMouseDown = (e) => {
     setIsDragging(true);
     setStartX(e.pageX - scrollRef.current.offsetLeft);
@@ -110,8 +50,62 @@ export default function WebProfile() {
     if (!isDragging) return;
     e.preventDefault();
     const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX) * 1.8; // Kecepatan geser
+    const walk = (x - startX) * 1.8;
     scrollRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  // Fetch data dari Supabase
+  const fetchReviews = async () => {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .order('id', { ascending: false });
+
+    if (error) {
+      console.error("Gagal ambil ulasan:", error);
+    } else {
+      setReviews(data || []);
+    }
+  };
+
+  useEffect(() => {
+    AOS.init({
+      duration: 1000,
+      once: true,
+      offset: 100,
+    });
+
+    fetchReviews();
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (newName && newQuote) {
+      const { error } = await supabase
+        .from('reviews')
+        .insert([{ name: newName, quote: newQuote }]);
+
+      if (error) {
+        alert("Gagal kirim ulasan: " + error.message);
+      } else {
+        setNewName("");
+        setNewQuote("");
+        fetchReviews();
+      }
+    }
+  };
+
+  const deleteReview = async (idToDelete) => {
+    const { error } = await supabase
+      .from('reviews')
+      .delete()
+      .eq('id', idToDelete);
+
+    if (error) {
+      alert("Gagal hapus ulasan");
+    } else {
+      fetchReviews();
+    }
   };
 
   return (
@@ -130,16 +124,16 @@ export default function WebProfile() {
         </div>
       </header>
 
-      {/* Hero - Tanpa AOS agar langsung terlihat */}
+      {/* Hero */}
       <section className="px-6 md:px-20 pt-8 pb-20 text-center bg-gradient-to-b from-[#f7f2eb] to-[#efe4d6]">
         <div className="max-w-4xl mx-auto">
           <div className="mb-10 flex justify-center">
-            <img src={HeroImage} alt="Ilustrasi Desain Web" className="-full h-full object-cover rounded-2xl shadow-xl" />
+            <img src={HeroImage} alt="Ilustrasi Desain Web" className="w-full h-full object-cover rounded-2xl shadow-xl" />
           </div>
           <h1 className="text-4xl md:text-6xl font-serif font-bold mb-6 leading-tight text-[#3d2e24]">
             Jasa Pembuatan <br /> Landing Page & Web Profile
           </h1>
-          <p className="text-lg md:text-xl max-w-2xl mx-auto mb-32 text-[#7a614b]">
+          <p className="text-lg md:text-xl max-w-2xl mx-auto mb-10 text-[#7a614b]">
             Website profesional, modern, dan responsif untuk membantu bisnis Anda tampil lebih terpercaya dan menarik lebih banyak pelanggan.
           </p>
           <div className="flex gap-6 justify-center">
@@ -222,84 +216,83 @@ export default function WebProfile() {
         </div>
       </section>
 
-      {/* Portfolio */}
+      {/* Portfolio Horizontal Scroll Slider */}
       <section id="portfolio" className="px-6 md:px-20 py-16 bg-white select-none relative">
-      <h2 data-aos="fade-up" className="text-3xl md:text-4xl font-serif font-bold mb-10 text-[#3d2e24] text-center">
-        Portfolio Kami
-      </h2>
+        <h2 data-aos="fade-up" className="text-3xl md:text-4xl font-serif font-bold mb-10 text-[#3d2e24] text-center">
+          Portfolio Kami
+        </h2>
 
-      {/* Container Slider dengan Tombol Navigasi */}
-      <div className="relative group">
-        {/* Tombol Panah Kiri */}
-        <button
-          onClick={() => scrollByAmount(-340)}
-          className="hidden md:flex absolute -left-5 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-[#8b6b4a] hover:bg-[#3d2e24] text-white rounded-full items-center justify-center shadow-lg transition-all duration-300 opacity-80 group-hover:opacity-100 hover:scale-110 active:scale-95"
-          aria-label="Scroll Kiri"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
+        <div className="relative group">
+          {/* Tombol Panah Kiri */}
+          <button
+            onClick={() => scrollByAmount(-340)}
+            className="hidden md:flex absolute -left-5 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-[#8b6b4a] hover:bg-[#3d2e24] text-white rounded-full items-center justify-center shadow-lg transition-all duration-300 opacity-80 group-hover:opacity-100 hover:scale-110 active:scale-95"
+            aria-label="Scroll Kiri"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
 
-        {/* Tombol Panah Kanan */}
-        <button
-          onClick={() => scrollByAmount(340)}
-          className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-[#8b6b4a] hover:bg-[#3d2e24] text-white rounded-full items-center justify-center shadow-lg transition-all duration-300 opacity-80 group-hover:opacity-100 hover:scale-110 active:scale-95"
-          aria-label="Scroll Kanan"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
+          {/* Tombol Panah Kanan */}
+          <button
+            onClick={() => scrollByAmount(340)}
+            className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-[#8b6b4a] hover:bg-[#3d2e24] text-white rounded-full items-center justify-center shadow-lg transition-all duration-300 opacity-80 group-hover:opacity-100 hover:scale-110 active:scale-95"
+            aria-label="Scroll Kanan"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
 
-        {/* Area Scrollable Portfolio */}
-        <div
-          ref={scrollRef}
-          onMouseDown={handleMouseDown}
-          onMouseLeave={handleMouseLeaveOrUp}
-          onMouseUp={handleMouseLeaveOrUp}
-          onMouseMove={handleMouseMove}
-          className={`flex overflow-x-auto gap-6 pb-6 pt-2 cursor-grab active:cursor-grabbing snap-x snap-mandatory scroll-smooth scrollbar-none ${
-            isDragging ? "cursor-grabbing scroll-auto" : ""
-          }`}
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        >
-          {[
-            { title: "Honey Company Website", img: HoneyImg, link: "https://honey-company.vercel.app/" },
-            { title: "Sistem Rekber Profesional", img: RekberImg, link: "https://rekber-psi.vercel.app" },
-            { title: "Alkaf Corporate Web", img: AlkafImg, link: "http://alkaf.netlify.app/" },
-            { title: "Student Leader Portal", img: StudentImg, link: "https://student-leader-summit.netlify.app/" }
-          ].map((item, idx) => (
-            <div 
-              key={idx} 
-              data-aos="fade-up" 
-              data-aos-delay={idx * 150} 
-              className="snap-start w-[280px] sm:w-[320px] flex-shrink-0 rounded-2xl shadow-md p-6 bg-[#f7f2eb] hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
-            >
-              <div>
-                <div className="h-40 rounded-xl mb-4 w-full bg-[#e8d8c3] flex items-center justify-center shadow-sm overflow-hidden">
-                  <img 
-                    src={item.img} 
-                    alt={item.title} 
-                    draggable="false"
-                    className="w-full h-full object-cover hover:scale-110 transition duration-500 pointer-events-none" 
-                  />
-                </div>
-                <h3 className="text-lg font-semibold text-[#3d2e24] mb-6">{item.title}</h3>
-              </div>
-              <a 
-                href={item.link} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="w-full py-2 px-4 bg-[#8b6b4a] text-white rounded-xl font-bold text-sm hover:bg-[#3d2e24] transition-colors text-center block"
+          {/* Area Horizontal Scroll */}
+          <div
+            ref={scrollRef}
+            onMouseDown={handleMouseDown}
+            onMouseLeave={handleMouseLeaveOrUp}
+            onMouseUp={handleMouseLeaveOrUp}
+            onMouseMove={handleMouseMove}
+            className={`flex overflow-x-auto gap-6 pb-6 pt-2 cursor-grab active:cursor-grabbing snap-x snap-mandatory scroll-smooth ${
+              isDragging ? "cursor-grabbing scroll-auto" : ""
+            }`}
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {[
+              { title: "Honey Company Website", img: HoneyImg, link: "https://honey-company.vercel.app/" },
+              { title: "Sistem Rekber Profesional", img: RekberImg, link: "https://rekber-psi.vercel.app" },
+              { title: "Alkaf Corporate Web", img: AlkafImg, link: "http://alkaf.netlify.app/" },
+              { title: "Student Leader Portal", img: StudentImg, link: "https://student-leader-summit.netlify.app/" }
+            ].map((item, idx) => (
+              <div 
+                key={idx} 
+                data-aos="fade-up" 
+                data-aos-delay={idx * 150} 
+                className="snap-start w-[280px] sm:w-[320px] flex-shrink-0 rounded-2xl shadow-md p-6 bg-[#f7f2eb] hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
               >
-                Lihat Project →
-              </a>
-            </div>
-          ))}
+                <div>
+                  <div className="h-40 rounded-xl mb-4 w-full bg-[#e8d8c3] flex items-center justify-center shadow-sm overflow-hidden">
+                    <img 
+                      src={item.img} 
+                      alt={item.title} 
+                      draggable="false"
+                      className="w-full h-full object-cover hover:scale-110 transition duration-500 pointer-events-none" 
+                    />
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#3d2e24] mb-6">{item.title}</h3>
+                </div>
+                <a 
+                  href={item.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-full py-2 px-4 bg-[#8b6b4a] text-white rounded-xl font-bold text-sm hover:bg-[#3d2e24] transition-colors text-center block"
+                >
+                  Lihat Project →
+                </a>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
       {/* Pricing */}
       <section id="pricing" data-aos="fade-up" className="px-6 md:px-20 py-16 bg-[#efe4d6] text-center">
@@ -369,5 +362,4 @@ export default function WebProfile() {
       <footer className="py-8 text-center text-[#7a614b] bg-[#f1e7da]">© 2026 AR Studio</footer>
     </div>
   );
-  }
 }
