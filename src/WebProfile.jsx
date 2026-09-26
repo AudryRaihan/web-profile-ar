@@ -79,6 +79,41 @@ export default function WebProfile() {
     }
   };
 
+  export default function PortfolioSection() {
+  const scrollRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  // Fungsi untuk Tombol Navigasi Kiri & Kanan (Smooth Scroll)
+  const scrollByAmount = (distance) => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollBy({
+        left: distance,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  // Handler Drag-to-Scroll Mouse
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    setStartX(e.pageX - scrollRef.current.offsetLeft);
+    setScrollLeft(scrollRef.current.scrollLeft);
+  };
+
+  const handleMouseLeaveOrUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 1.8; // Kecepatan geser
+    scrollRef.current.scrollLeft = scrollLeft - walk;
+  };
+
   return (
     <div className="min-h-screen bg-[#f7f2eb] text-[#5c4633] font-sans" style={{ scrollBehavior: 'smooth' }}>
       
@@ -188,30 +223,83 @@ export default function WebProfile() {
       </section>
 
       {/* Portfolio */}
-      <section id="portfolio" className="px-6 md:px-20 py-16 text-center bg-white">
-        <h2 data-aos="fade-up" className="text-3xl md:text-4xl font-serif font-bold mb-10 text-[#3d2e24]">Portfolio Kami</h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
+      <section id="portfolio" className="px-6 md:px-20 py-16 bg-white select-none relative">
+      <h2 data-aos="fade-up" className="text-3xl md:text-4xl font-serif font-bold mb-10 text-[#3d2e24] text-center">
+        Portfolio Kami
+      </h2>
+
+      {/* Container Slider dengan Tombol Navigasi */}
+      <div className="relative group">
+        {/* Tombol Panah Kiri */}
+        <button
+          onClick={() => scrollByAmount(-340)}
+          className="hidden md:flex absolute -left-5 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-[#8b6b4a] hover:bg-[#3d2e24] text-white rounded-full items-center justify-center shadow-lg transition-all duration-300 opacity-80 group-hover:opacity-100 hover:scale-110 active:scale-95"
+          aria-label="Scroll Kiri"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        {/* Tombol Panah Kanan */}
+        <button
+          onClick={() => scrollByAmount(340)}
+          className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-[#8b6b4a] hover:bg-[#3d2e24] text-white rounded-full items-center justify-center shadow-lg transition-all duration-300 opacity-80 group-hover:opacity-100 hover:scale-110 active:scale-95"
+          aria-label="Scroll Kanan"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+
+        {/* Area Scrollable Portfolio */}
+        <div
+          ref={scrollRef}
+          onMouseDown={handleMouseDown}
+          onMouseLeave={handleMouseLeaveOrUp}
+          onMouseUp={handleMouseLeaveOrUp}
+          onMouseMove={handleMouseMove}
+          className={`flex overflow-x-auto gap-6 pb-6 pt-2 cursor-grab active:cursor-grabbing snap-x snap-mandatory scroll-smooth scrollbar-none ${
+            isDragging ? "cursor-grabbing scroll-auto" : ""
+          }`}
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        >
           {[
             { title: "Honey Company Website", img: HoneyImg, link: "https://honey-company.vercel.app/" },
             { title: "Sistem Rekber Profesional", img: RekberImg, link: "https://rekber-psi.vercel.app" },
             { title: "Alkaf Corporate Web", img: AlkafImg, link: "http://alkaf.netlify.app/" },
             { title: "Student Leader Portal", img: StudentImg, link: "https://student-leader-summit.netlify.app/" }
-          ].slice(0, showAllPortfolio ? undefined : 3).map((item, idx) => (
-            <div key={idx} data-aos="fade-up" data-aos-delay={idx * 150} className="rounded-2xl shadow-md p-6 bg-[#f7f2eb] hover:shadow-xl transition flex flex-col h-full">
-              <div className="h-40 rounded-xl mb-4 w-full bg-[#e8d8c3] flex items-center justify-center shadow-sm overflow-hidden">
-                <img src={item.img} alt={item.title} className="w-full h-full object-cover hover:scale-110 transition duration-500" />
+          ].map((item, idx) => (
+            <div 
+              key={idx} 
+              data-aos="fade-up" 
+              data-aos-delay={idx * 150} 
+              className="snap-start w-[280px] sm:w-[320px] flex-shrink-0 rounded-2xl shadow-md p-6 bg-[#f7f2eb] hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+            >
+              <div>
+                <div className="h-40 rounded-xl mb-4 w-full bg-[#e8d8c3] flex items-center justify-center shadow-sm overflow-hidden">
+                  <img 
+                    src={item.img} 
+                    alt={item.title} 
+                    draggable="false"
+                    className="w-full h-full object-cover hover:scale-110 transition duration-500 pointer-events-none" 
+                  />
+                </div>
+                <h3 className="text-lg font-semibold text-[#3d2e24] mb-6">{item.title}</h3>
               </div>
-              <h3 className="text-lg font-semibold text-[#3d2e24] mb-6 flex-grow">{item.title}</h3>
-              <a href={item.link} target="_blank" rel="noopener noreferrer" className="w-full py-2 px-4 bg-[#8b6b4a] text-white rounded-xl font-bold text-sm hover:bg-[#3d2e24] transition-colors text-center">
+              <a 
+                href={item.link} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="w-full py-2 px-4 bg-[#8b6b4a] text-white rounded-xl font-bold text-sm hover:bg-[#3d2e24] transition-colors text-center block"
+              >
                 Lihat Project →
               </a>
             </div>
           ))}
         </div>
-        <button onClick={() => setShowAllPortfolio(!showAllPortfolio)} className="text-[#8b6b4a] font-bold hover:underline transition">
-          {showAllPortfolio ? "↑ Sembunyikan Portfolio" : "Tampilkan Lebih Banyak Portfolio →"}
-        </button>
-      </section>
+      </div>
+    </section>
 
       {/* Pricing */}
       <section id="pricing" data-aos="fade-up" className="px-6 md:px-20 py-16 bg-[#efe4d6] text-center">
